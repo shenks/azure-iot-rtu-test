@@ -37,15 +37,15 @@ def main():
     # Run an infinite while loop to send data every 5 seconds
     while True:
         # Generate random value
-        water_level = random.randint(20, 50)
+        water_level = random.randint(0, 10)
         # Generate data packet
         data={
-            "device_id":"edge-1",
+            "device_id":"test-device-1",
             "water_level":water_level,
             "edge_time_stamp":str(datetime.datetime.now())
         }
         asyncio.run(sendToIotHub(data=json.dumps(data)))
-        time.sleep(5)
+        time.sleep(10)
 
 if __name__ == '__main__':
     main()
