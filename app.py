@@ -33,13 +33,17 @@ async def sendToIotHub(data):
 
 async def main():
     while True:
-        # Generate random value
-        water_level = random.randint(0, 10)
-        # Generate JSON data packet
+        # generate float with 3 decimals
+        water_level = round(random.uniform(0, 10), 3)
+        # generate JSON data packet
         data = {
-            "device_id": "test-device-1",
-            "water_level": water_level,
-            "edge_time_stamp": str(datetime.datetime.now())
+            "stationId": "test-device-1",
+            "waterLevel": water_level,
+            "timestamp": str(datetime.datetime.now())
+            # str() makes it a string for ease of data manipulation
+            # first datetime is the python module that provides classes
+            # second datetime is the class within the datetime module to create date and time objects
+            # .now: returns current local date and time as an object
         }
         await sendToIotHub(data=json.dumps(data))  # Await the sendToIotHub call
         await asyncio.sleep(10)  # asyncio.sleep for time interval 
