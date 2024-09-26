@@ -7,37 +7,18 @@ import asyncio
 from dotenv import load_dotenv
 from azure.iot.device.aio import IoTHubDeviceClient
 
-# Load environment variables from .env file
+# load environment variables from .env file
 load_dotenv()
 
-# Get the Azure IoT Hub device primary connection string from the environment variable
-connectionString = os.getenv("IOT_CONNECTION_STRING")
+# get the Azure IoT Hub device connection strings from the environment variables
+connectionString1 = os.getenv("IOT_CONNECTION_STRING_1")
+connectionString2 = os.getenv("IOT_CONNECTION_STRING_2")
 
-async def sendToIotHub(data):
+async def sendToIotHub(device_client, station_id, water_level):
     try:
-        # Create an instance of the IoT Hub Client class
-        device_client = IoTHubDeviceClient.create_from_connection_string(connectionString)
-
-        # Connect the device client
-        await device_client.connect()
-
-        #Send the message
-        await device_client.send_message(data)
-        print("Message sent to IoT Hub:", data)
-
-        # Shutdown the client
-        await device_client.shutdown()
-        
-    except Exception as e:
-        print("Error:", str(e))
-
-async def main():
-    while True:
-        # generate float with 3 decimals
-        water_level = round(random.uniform(0, 10), 3)
-        # generate JSON data packet
+        # Generate JSON data packet
         data = {
-            "stationId": "test-device-1",
+            "stationId": station_id,
             "waterLevel": water_level,
             "timestamp": str(datetime.datetime.now())
             # str() makes it a string for ease of data manipulation
@@ -45,8 +26,38 @@ async def main():
             # second datetime is the class within the datetime module to create date and time objects
             # .now: returns current local date and time as an object
         }
-        await sendToIotHub(data=json.dumps(data))  # Await the sendToIotHub call
-        await asyncio.sleep(10)  # asyncio.sleep for time interval 
+        
+        # Send the message
+        await device_client.send_message(json.dumps(data))
+        print(f"Message sent to IoT Hub from {station_id}: {data}")
+
+    except Exception as e:
+        print(f"Error from {station_id}:", str(e))
+
+async def simulate_device(device_client, station_id):
+    # Connect the client once and keep it open
+    await device_client.connect()
+
+    try:
+        while True:
+            # Generate random water level with 3 decimals
+            water_level = round(random.uniform(0, 10), 3)
+            await sendToIotHub(device_client, station_id, water_level)
+            await asyncio.sleep(10)  # asyncio.sleep for time interval 
+    finally:
+        # Ensure the client shuts down after the simulation
+        await device_client.shutdown()
+
+async def main():
+    # Create IoT Hub clients for both devices
+    device_client1 = IoTHubDeviceClient.create_from_connection_string(connectionString1)
+    device_client2 = IoTHubDeviceClient.create_from_connection_string(connectionString2)
+
+    # Simulate both devices concurrently
+    await asyncio.gather(
+        simulate_device(device_client1, "test-device-1"),
+        simulate_device(device_client2, "test-device-2")
+    )
 
 if __name__ == '__main__':
     asyncio.run(main())  # Run the main routine
